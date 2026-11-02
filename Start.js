@@ -363,7 +363,4 @@ export default function App() {
         Më poshtë paraqitet përgjigjja që ke zgjedhur.
       </Text>
 
-      <Card>
-        <View style={styles.resultIcon}>
-
-        </View>
+     
