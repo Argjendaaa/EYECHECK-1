@@ -800,18 +800,4 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.blue,
   },
 
-  // Result
-  resultBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.lightTeal,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginTop: 12,
-  },
-  resultBadgeText: {
-    color: COLORS.teal,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-});
+  
