@@ -808,10 +808,4 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     marginTop: 12,
-  },
-  resultBadgeText: {
-    color: COLORS.teal,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-});
+ 
