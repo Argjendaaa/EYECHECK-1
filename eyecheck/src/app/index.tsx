@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FlatList, Text, View, StyleSheet } from 'react-native';
-import { supabase } from '../../utils/supabase';
+import { supabase } from '../utils/supabase';
 
 type Diagnoza = { id: number; emri: string; pershkrimi: string | null };
 
@@ -19,7 +19,7 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulli}>Syri</Text>
+      <Text style={styles.titulli}>Eyecheck</Text>
       {gabim && <Text style={styles.gabim}>Gabim: {gabim}</Text>}
       <FlatList
         data={diagnozat}
