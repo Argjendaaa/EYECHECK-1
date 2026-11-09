@@ -79,4 +79,4 @@ const styles = StyleSheet.create({
   button: { backgroundColor: '#1a73e8', paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginTop: 8 },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
   disclaimer: { fontSize: 12, color: '#888', textAlign: 'center', marginBottom: 24 },
-}
+});
