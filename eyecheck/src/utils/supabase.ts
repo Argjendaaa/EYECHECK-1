@@ -4,7 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY;
+const supabaseKey =
+  process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_KEY;
 
 export const supabaseIsConfigured = Boolean(supabaseUrl && supabaseKey);
 

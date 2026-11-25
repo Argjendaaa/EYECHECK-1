@@ -4,7 +4,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Get started
 
-1. Copy `.env.example` to `.env` and fill in the Supabase project URL and anon/publishable key.
+1. Put `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` using values from the Supabase project.
 2. Install dependencies
 
    ```bash
