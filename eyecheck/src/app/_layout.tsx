@@ -8,14 +8,14 @@ import { SesioniProvider, useSesioni } from '@/utils/sesioni';
 SplashScreen.preventAutoHideAsync();
 
 function Rrugete() {
-  const { sesioni, dukeNgarkuar } = useSesioni();
+  const { sesioni, dukeNgarkuar, rikuperimFjalekalimi } = useSesioni();
   if (dukeNgarkuar) return null;
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!!sesioni}>
+      <Stack.Protected guard={!!sesioni && !rikuperimFjalekalimi}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
-      <Stack.Protected guard={!sesioni}>
+      <Stack.Protected guard={!sesioni || rikuperimFjalekalimi}>
         <Stack.Screen name="hyrja" />
       </Stack.Protected>
     </Stack>
