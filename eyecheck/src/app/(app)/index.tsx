@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { BookingForm } from '@/components/booking-form';
 
 type Roli = 'klient' | 'staf';
 
@@ -25,6 +26,13 @@ const TAKIMET = [
 
 export default function Index() {
   const [roli, setRoli] = useState<Roli>('klient');
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingService, setBookingService] = useState('Vizitë në optikë');
+
+  const openBooking = (service = 'Vizitë në optikë') => {
+    setBookingService(service);
+    setBookingOpen(true);
+  };
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -43,9 +51,17 @@ export default function Index() {
         <RoleButton label="Staf" active={roli === 'staf'} onPress={() => setRoli('staf')} />
       </View>
 
-      {roli === 'klient' ? <PamjaKlient /> : <PamjaStaf />}
+      {roli === 'klient' ? <PamjaKlient onRezervo={openBooking} /> : <PamjaStaf />}
 
       <Text style={styles.footer}>Optika · Shërbim i thjeshtë, kujdes personal</Text>
+
+      {bookingOpen && (
+        <BookingForm
+          visible={bookingOpen}
+          defaultService={bookingService}
+          onClose={() => setBookingOpen(false)}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -62,7 +78,7 @@ function RoleButton({ label, active, onPress }: { label: string; active: boolean
   );
 }
 
-function PamjaKlient() {
+function PamjaKlient({ onRezervo }: { onRezervo: (service?: string) => void }) {
   return (
     <>
       <Text style={styles.greeting}>Përshëndetje 👋</Text>
@@ -70,27 +86,39 @@ function PamjaKlient() {
 
       <View style={styles.hero}>
         <View style={styles.heroOrb} />
-        <Text style={styles.heroEyebrow}>VIZITA JOTE E ARDHSHME</Text>
+        <Text style={styles.heroEyebrow}>PLANIFIKO VIZITËN</Text>
         <Text style={styles.heroTitle}>Rezervo një termin</Text>
-        <Text style={styles.heroBody}>Zgjidh shërbimin dhe kohën që të përshtatet.</Text>
+        <Text style={styles.heroBody}>
+          Zgjidh shërbimin, datën dhe orën. Optika do ta konfirmojë kërkesën.
+        </Text>
         <ActionButton
-          label="Zgjidh një termin"
-          onPress={() => Alert.alert('Rezervimi', 'Rezervimi i termineve vjen së shpejti.')}
+          label="Kërko termin"
+          onPress={() => onRezervo()}
         />
       </View>
 
-      <SectionHeading title="Shërbimet tona" action="Shiko të gjitha" />
+      <SectionHeading title="Shërbimet tona" />
       <View style={styles.serviceRow}>
-        <ServiceCard icon="◉" title="Kontroll" detail="Kontroll i shikimit" />
-        <ServiceCard icon="⌕" title="Syze" detail="Zgjedhje kornizash" />
+        <ServiceCard
+          icon="◉"
+          title="Vizitë në optikë"
+          detail="Zgjidh kohën e vizitës"
+          onPress={() => onRezervo('Vizitë në optikë')}
+        />
+        <ServiceCard
+          icon="⌕"
+          title="Konsultë për korniza"
+          detail="Gjej stilin që të përshtatet"
+          onPress={() => onRezervo('Konsultë për korniza')}
+        />
       </View>
 
-      <SectionHeading title="Koleksioni" action="Eksploro" />
+      <SectionHeading title="Koleksioni" />
       {PRODUKTET.map((produkti, index) => (
-        <Pressable
+        <View
           key={produkti.emri}
           style={styles.productRow}
-          onPress={() => Alert.alert(produkti.emri, 'Katalogu i produkteve vjen së shpejti.')}>
+        >
           <View style={[styles.productIcon, index === 1 && styles.productIconGold]}>
             <Text style={styles.productGlyph}>{produkti.ikona}</Text>
           </View>
@@ -99,7 +127,7 @@ function PamjaKlient() {
             <Text style={styles.productDetail}>{produkti.detaji}</Text>
           </View>
           <Text style={styles.chevron}>›</Text>
-        </Pressable>
+        </View>
       ))}
     </>
   );
@@ -126,7 +154,7 @@ function PamjaStaf() {
         </View>
       </View>
 
-      <SectionHeading title="Terminet e radhës" action="Orari i plotë" />
+      <SectionHeading title="Terminet e radhës" />
       {TAKIMET.map((takimi) => (
         <Pressable
           key={takimi.ora}
@@ -155,11 +183,22 @@ function PamjaStaf() {
   );
 }
 
-function ServiceCard({ icon, title, detail }: { icon: string; title: string; detail: string }) {
+function ServiceCard({
+  icon,
+  title,
+  detail,
+  onPress,
+}: {
+  icon: string;
+  title: string;
+  detail: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       style={styles.serviceCard}
-      onPress={() => Alert.alert(title, 'Detajet e shërbimit vijnë së shpejti.')}>
+      accessibilityRole="button"
+      onPress={onPress}>
       <Text style={styles.serviceIcon}>{icon}</Text>
       <Text style={styles.serviceTitle}>{title}</Text>
       <Text style={styles.serviceDetail}>{detail}</Text>
@@ -176,13 +215,10 @@ function StatCard({ value, label }: { value: string; label: string }) {
   );
 }
 
-function SectionHeading({ title, action }: { title: string; action: string }) {
+function SectionHeading({ title }: { title: string }) {
   return (
     <View style={styles.sectionHeading}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      <Pressable onPress={() => Alert.alert(title, 'Kjo pjesë do të zgjerohet në hapin tjetër.')}>
-        <Text style={styles.sectionAction}>{action}</Text>
-      </Pressable>
     </View>
   );
 }
