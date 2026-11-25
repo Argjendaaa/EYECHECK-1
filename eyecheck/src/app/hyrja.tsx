@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { hyr, krijoLlogari } from '@/utils/hyrja';
+import { supabaseIsConfigured } from '@/utils/supabase';
 
 export default function Hyrja() {
   const [email, setEmail] = useState('');
@@ -9,6 +10,12 @@ export default function Hyrja() {
 
   async function dergo(krijo: boolean) {
     setGabim(null);
+    if (!supabaseIsConfigured) {
+      setGabim(
+        'Lidhja me Supabase mungon. Krijo eyecheck/.env sipas eyecheck/.env.example dhe rinise aplikacionin.',
+      );
+      return;
+    }
     const { error } = krijo
       ? await krijoLlogari(email.trim(), fjalekalimi)
       : await hyr(email.trim(), fjalekalimi);
@@ -18,6 +25,11 @@ export default function Hyrja() {
   return (
     <View style={styles.container}>
       <Text style={styles.titulli}>Eyecheck</Text>
+      {!supabaseIsConfigured && (
+        <Text style={styles.gabim}>
+          Konfiguro eyecheck/.env sipas eyecheck/.env.example për të përdorur hyrjen.
+        </Text>
+      )}
       {gabim && <Text style={styles.gabim}>{gabim}</Text>}
       <TextInput
         style={styles.input}
