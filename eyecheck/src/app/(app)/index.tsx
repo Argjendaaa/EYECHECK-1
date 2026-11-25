@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StatusBar,
@@ -9,8 +9,16 @@ import {
   View,
 } from 'react-native';
 import { BookingForm } from '@/components/booking-form';
+import { supabase } from '@/utils/supabase';
+import { useSesioni } from '@/utils/sesioni';
 
-type Roli = 'klient' | 'staf';
+type AppointmentStatus = 'requested' | 'confirmed' | 'completed' | 'cancelled';
+type Appointment = {
+  id: string;
+  service: string;
+  requested_at: string;
+  status: AppointmentStatus;
+};
 
 const PRODUKTET = [
   { ikona: '◉', emri: 'Korniza optike', detaji: 'Për çdo ditë' },
@@ -18,16 +26,70 @@ const PRODUKTET = [
   { ikona: '✳', emri: 'Lente kontakti', detaji: 'Komoditet i lehtë' },
 ];
 
-const TAKIMET = [
-  { ora: '09:30', emri: 'Arta K.', sherbimi: 'Kontroll i syve', statusi: 'Në pritje' },
-  { ora: '10:15', emri: 'Luan M.', sherbimi: 'Marrje e syzeve', statusi: 'Konfirmuar' },
-  { ora: '11:00', emri: 'Elira B.', sherbimi: 'Konsultim për korniza', statusi: 'Konfirmuar' },
-];
-
 export default function Index() {
-  const [roli, setRoli] = useState<Roli>('klient');
+  const { sesioni } = useSesioni();
+  const [roli, setRoli] = useState<'customer' | 'staff'>('customer');
+  const [dukeNgarkuarRolin, setDukeNgarkuarRolin] = useState(true);
+  const [terminet, setTerminet] = useState<Appointment[]>([]);
+  const [dukeNgarkuarTerminet, setDukeNgarkuarTerminet] = useState(false);
+  const [gabimiTermineve, setGabimiTermineve] = useState('');
+  const [terminiNePerditesim, setTerminiNePerditesim] = useState<string | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingService, setBookingService] = useState('Vizitë në optikë');
+
+  useEffect(() => {
+    let aktiv = true;
+    const ngarkoRolin = async () => {
+      if (!sesioni?.user.id) {
+        if (aktiv) setDukeNgarkuarRolin(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', sesioni.user.id)
+        .maybeSingle();
+      if (aktiv) {
+        setRoli(data?.role === 'staff' || data?.role === 'owner' ? 'staff' : 'customer');
+        setDukeNgarkuarRolin(false);
+      }
+    };
+    setDukeNgarkuarRolin(true);
+    void ngarkoRolin();
+    return () => { aktiv = false; };
+  }, [sesioni?.user.id]);
+
+  const ngarkoTerminet = useCallback(async () => {
+    setDukeNgarkuarTerminet(true);
+    setGabimiTermineve('');
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('id, service, requested_at, status')
+      .or(`status.eq.requested,requested_at.gte.${new Date().toISOString()}`)
+      .order('requested_at', { ascending: true })
+      .limit(30);
+    if (error) {
+      setGabimiTermineve('Terminet nuk u ngarkuan. Kontrollo lidhjen dhe konfigurimin e bazës së të dhënave.');
+    } else {
+      setTerminet((data ?? []) as Appointment[]);
+    }
+    setDukeNgarkuarTerminet(false);
+  }, []);
+
+  useEffect(() => {
+    if (!dukeNgarkuarRolin) void ngarkoTerminet();
+  }, [dukeNgarkuarRolin, ngarkoTerminet, roli]);
+
+  const perditesoStatusin = async (id: string, status: 'confirmed' | 'cancelled') => {
+    setTerminiNePerditesim(id);
+    const { error } = await supabase.from('appointments').update({ status }).eq('id', id);
+    if (error) {
+      setGabimiTermineve('Statusi nuk u ruajt. Kontrollo që llogaria ka rolin e stafit në Supabase.');
+    } else {
+      setTerminet((aktualet) => aktualet.map((termini) => termini.id === id ? { ...termini, status } : termini));
+    }
+    setTerminiNePerditesim(null);
+  };
 
   const openBooking = (service = 'Vizitë në optikë') => {
     setBookingService(service);
@@ -46,12 +108,25 @@ export default function Index() {
         <View style={styles.avatar}><Text style={styles.avatarText}>O</Text></View>
       </View>
 
-      <View style={styles.roleSwitch}>
-        <RoleButton label="Klient" active={roli === 'klient'} onPress={() => setRoli('klient')} />
-        <RoleButton label="Staf" active={roli === 'staf'} onPress={() => setRoli('staf')} />
-      </View>
-
-      {roli === 'klient' ? <PamjaKlient onRezervo={openBooking} /> : <PamjaStaf />}
+      {dukeNgarkuarRolin ? (
+        <View style={styles.loadingPanel}><ActivityIndicator color="#31594d" /><Text style={styles.loadingText}>Po përgatitet profili…</Text></View>
+      ) : roli === 'customer' ? (
+        <PamjaKlient
+          onRezervo={openBooking}
+          terminet={terminet}
+          dukeNgarkuar={dukeNgarkuarTerminet}
+          gabimi={gabimiTermineve}
+        />
+      ) : (
+        <PamjaStaf
+          terminet={terminet}
+          dukeNgarkuar={dukeNgarkuarTerminet}
+          terminiNePerditesim={terminiNePerditesim}
+          gabimi={gabimiTermineve}
+          neNgarko={ngarkoTerminet}
+          nePerditeso={perditesoStatusin}
+        />
+      )}
 
       <Text style={styles.footer}>Optika · Shërbim i thjeshtë, kujdes personal</Text>
 
@@ -59,26 +134,28 @@ export default function Index() {
         <BookingForm
           visible={bookingOpen}
           defaultService={bookingService}
-          onClose={() => setBookingOpen(false)}
+          onClose={() => {
+            setBookingOpen(false);
+            void ngarkoTerminet();
+          }}
         />
       )}
     </ScrollView>
   );
 }
 
-function RoleButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={[styles.roleButton, active && styles.roleButtonActive]}>
-      <Text style={[styles.roleText, active && styles.roleTextActive]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function PamjaKlient({ onRezervo }: { onRezervo: (service?: string) => void }) {
+function PamjaKlient({
+  onRezervo,
+  terminet,
+  dukeNgarkuar,
+  gabimi,
+}: {
+  onRezervo: (service?: string) => void;
+  terminet: Appointment[];
+  dukeNgarkuar: boolean;
+  gabimi: string;
+}) {
+  const terminetAktive = terminet.filter((termini) => termini.status !== 'cancelled');
   return (
     <>
       <Text style={styles.greeting}>Përshëndetje 👋</Text>
@@ -113,6 +190,17 @@ function PamjaKlient({ onRezervo }: { onRezervo: (service?: string) => void }) {
         />
       </View>
 
+      <SectionHeading title="Terminet e mia" />
+      {gabimi ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>{gabimi}</Text>
+      ) : dukeNgarkuar ? (
+        <ActivityIndicator color="#31594d" style={styles.inlineLoader} />
+      ) : terminetAktive.length ? (
+        terminetAktive.slice(0, 3).map((termini) => <AppointmentCard key={termini.id} appointment={termini} />)
+      ) : (
+        <Text style={styles.emptyText}>Ende nuk ke termine. Kërko termin për të planifikuar vizitën.</Text>
+      )}
+
       <SectionHeading title="Koleksioni" />
       {PRODUKTET.map((produkti, index) => (
         <View
@@ -133,53 +221,108 @@ function PamjaKlient({ onRezervo }: { onRezervo: (service?: string) => void }) {
   );
 }
 
-function PamjaStaf() {
+function PamjaStaf({
+  terminet,
+  dukeNgarkuar,
+  terminiNePerditesim,
+  gabimi,
+  neNgarko,
+  nePerditeso,
+}: {
+  terminet: Appointment[];
+  dukeNgarkuar: boolean;
+  terminiNePerditesim: string | null;
+  gabimi: string;
+  neNgarko: () => Promise<void>;
+  nePerditeso: (id: string, status: 'confirmed' | 'cancelled') => Promise<void>;
+}) {
+  const nePritje = terminet.filter((termini) => termini.status === 'requested');
+  const sot = new Date().toDateString();
+  const terminetSot = terminet.filter((termini) => new Date(termini.requested_at).toDateString() === sot);
   return (
     <>
       <Text style={styles.greeting}>Mirëmëngjes 👋</Text>
       <Text style={styles.pageTitle}>Përmbledhja e ditës</Text>
-      <Text style={styles.sampleNote}>Pamje demonstrimi · të dhëna shembull</Text>
 
       <View style={styles.statsRow}>
-        <StatCard value="08" label="Termine sot" />
-        <StatCard value="03" label="Në pritje" />
-        <StatCard value="12" label="Porosi aktive" />
+        <StatCard value={String(terminetSot.length).padStart(2, '0')} label="Termine sot" />
+        <StatCard value={String(nePritje.length).padStart(2, '0')} label="Në pritje" />
+        <StatCard value="—" label="Porosi" />
       </View>
 
       <View style={styles.staffBanner}>
         <Text style={styles.bannerIcon}>✦</Text>
         <View style={styles.bannerCopy}>
           <Text style={styles.bannerTitle}>Gati për ditën</Text>
-          <Text style={styles.bannerDetail}>Orari dhe porositë, të gjitha në një vend.</Text>
+          <Text style={styles.bannerDetail}>Shqyrto kërkesat e termineve dhe konfirmo orarin.</Text>
         </View>
       </View>
 
-      <SectionHeading title="Terminet e radhës" />
-      {TAKIMET.map((takimi) => (
-        <Pressable
-          key={takimi.ora}
-          style={styles.appointmentCard}
-          onPress={() => Alert.alert(takimi.emri, 'Detajet e klientit do të shfaqen këtu.')}>
-          <View style={styles.timeBlock}><Text style={styles.timeText}>{takimi.ora}</Text></View>
-          <View style={styles.appointmentCopy}>
-            <Text style={styles.customerName}>{takimi.emri}</Text>
-            <Text style={styles.appointmentService}>{takimi.sherbimi}</Text>
-          </View>
-          <View style={[styles.statusPill, takimi.statusi === 'Në pritje' && styles.statusPending]}>
-            <Text style={[styles.statusText, takimi.statusi === 'Në pritje' && styles.statusPendingText]}>
-              {takimi.statusi}
-            </Text>
-          </View>
+      <View style={styles.staffSectionHeading}>
+        <SectionHeading title="Kërkesat për termine" />
+        <Pressable accessibilityRole="button" disabled={dukeNgarkuar} onPress={() => void neNgarko()}>
+          <Text style={styles.refreshText}>{dukeNgarkuar ? 'Po ngarkohen…' : 'Rifresko'}</Text>
         </Pressable>
-      ))}
-
-      <Pressable
-        style={styles.secondaryAction}
-        onPress={() => Alert.alert('Menaxhimi i porosive', 'Porositë aktive do të hapen këtu.')}>
-        <Text style={styles.secondaryActionText}>Menaxho porositë e syzeve</Text>
-        <Text style={styles.chevron}>›</Text>
-      </Pressable>
+      </View>
+      {gabimi ? <Text accessibilityRole="alert" style={styles.errorText}>{gabimi}</Text> : null}
+      {dukeNgarkuar ? (
+        <ActivityIndicator color="#31594d" style={styles.inlineLoader} />
+      ) : terminet.length ? (
+        terminet.map((termini) => (
+          <View key={termini.id} style={styles.staffAppointmentWrap}>
+            <AppointmentCard appointment={termini} />
+            {termini.status === 'requested' ? (
+              <View style={styles.appointmentActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={terminiNePerditesim === termini.id}
+                  onPress={() => void nePerditeso(termini.id, 'confirmed')}
+                  style={styles.confirmButton}>
+                  <Text style={styles.confirmButtonText}>{terminiNePerditesim === termini.id ? 'Po ruhet…' : 'Konfirmo'}</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={terminiNePerditesim === termini.id}
+                  onPress={() => void nePerditeso(termini.id, 'cancelled')}
+                  style={styles.cancelButton}>
+                  <Text style={styles.cancelButtonText}>Anulo</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>Nuk ka kërkesa për termine për momentin.</Text>
+      )}
     </>
+  );
+}
+
+function AppointmentCard({ appointment }: { appointment: Appointment }) {
+  const date = new Date(appointment.requested_at);
+  const dateLabel = date.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' });
+  const timeLabel = date.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit' });
+  const statusLabel: Record<AppointmentStatus, string> = {
+    requested: 'Në pritje',
+    confirmed: 'Konfirmuar',
+    completed: 'Përfunduar',
+    cancelled: 'Anuluar',
+  };
+  const isPending = appointment.status === 'requested';
+  return (
+    <View style={styles.appointmentCard}>
+      <View style={styles.timeBlock}>
+        <Text style={styles.timeText}>{timeLabel}</Text>
+        <Text style={styles.dateText}>{dateLabel}</Text>
+      </View>
+      <View style={styles.appointmentCopy}>
+        <Text style={styles.customerName}>{appointment.service}</Text>
+        <Text style={styles.appointmentService}>Termin në optikë</Text>
+      </View>
+      <View style={[styles.statusPill, isPending && styles.statusPending]}>
+        <Text style={[styles.statusText, isPending && styles.statusPendingText]}>{statusLabel[appointment.status]}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -240,14 +383,8 @@ const styles = StyleSheet.create({
   headerCaption: { color: '#66746f', fontSize: 12, marginTop: 4 },
   avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#e0e9e3', alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#173d37', fontSize: 16, fontWeight: '700' },
-  roleSwitch: { flexDirection: 'row', padding: 4, backgroundColor: '#e8ebe5', borderRadius: 14, marginBottom: 24 },
-  roleButton: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 11 },
-  roleButtonActive: { backgroundColor: '#173d37' },
-  roleText: { color: '#64716b', fontSize: 14, fontWeight: '600' },
-  roleTextActive: { color: '#fff' },
   greeting: { color: '#738078', fontSize: 14, marginBottom: 6 },
   pageTitle: { color: '#1d302b', fontSize: 26, lineHeight: 32, fontWeight: '700', marginBottom: 20 },
-  sampleNote: { color: '#8b958f', fontSize: 11, marginTop: -14, marginBottom: 16 },
   hero: { overflow: 'hidden', backgroundColor: '#173d37', borderRadius: 22, padding: 22, marginBottom: 26 },
   heroOrb: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: '#24574c', right: -55, top: -70 },
   heroEyebrow: { color: '#b9d2c1', fontSize: 10, fontWeight: '700', letterSpacing: 1.4 },
@@ -258,7 +395,6 @@ const styles = StyleSheet.create({
   actionArrow: { color: '#1d302b', fontWeight: '700', fontSize: 15 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginTop: 2 },
   sectionTitle: { color: '#1d302b', fontSize: 17, fontWeight: '700' },
-  sectionAction: { color: '#54756b', fontSize: 12, fontWeight: '600' },
   serviceRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   serviceCard: { flex: 1, backgroundColor: '#fff', borderRadius: 17, padding: 16, borderWidth: 1, borderColor: '#e9e9e2' },
   serviceIcon: { color: '#aa8650', fontSize: 24, marginBottom: 15 },
@@ -291,7 +427,19 @@ const styles = StyleSheet.create({
   statusText: { color: '#406957', fontSize: 9, fontWeight: '700' },
   statusPending: { backgroundColor: '#f7edda' },
   statusPendingText: { color: '#9b7132' },
-  secondaryAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderRadius: 15, paddingVertical: 14, paddingHorizontal: 16, marginTop: 8, borderWidth: 1, borderColor: '#e9e9e2' },
-  secondaryActionText: { color: '#31594d', fontSize: 13, fontWeight: '700' },
+  loadingPanel: { minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText: { color: '#718078', fontSize: 13 },
+  inlineLoader: { marginVertical: 20 },
+  emptyText: { color: '#718078', backgroundColor: '#fff', borderRadius: 14, padding: 16, fontSize: 13, lineHeight: 19, marginBottom: 18 },
+  errorText: { color: '#9f3333', backgroundColor: '#fff0ed', borderRadius: 12, padding: 13, fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  staffSectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  refreshText: { color: '#31594d', fontSize: 12, fontWeight: '700', padding: 8 },
+  staffAppointmentWrap: { marginBottom: 8 },
+  appointmentActions: { flexDirection: 'row', gap: 9, marginTop: -3, marginBottom: 9 },
+  confirmButton: { flex: 1, minHeight: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: '#173d37' },
+  confirmButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  cancelButton: { minWidth: 88, minHeight: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff0ed' },
+  cancelButtonText: { color: '#9f3333', fontSize: 12, fontWeight: '700' },
+  dateText: { color: '#718078', fontSize: 10, marginTop: 3, textAlign: 'center' },
   footer: { color: '#9aa49d', fontSize: 11, textAlign: 'center', marginTop: 26 },
 });
