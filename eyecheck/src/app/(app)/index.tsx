@@ -158,9 +158,11 @@ export default function Index() {
           terminet={terminet}
           dukeNgarkuar={dukeNgarkuarTerminet}
           gabimi={gabimiTermineve}
+          neNgarkoTerminet={ngarkoTerminet}
           porosite={porosite}
           dukeNgarkuarPorosite={dukeNgarkuarPorosite}
           gabimiPorosive={gabimiPorosive}
+          neNgarkoPorosite={ngarkoPorosite}
         />
       ) : (
         <PamjaStaf
@@ -202,17 +204,21 @@ function PamjaKlient({
   terminet,
   dukeNgarkuar,
   gabimi,
+  neNgarkoTerminet,
   porosite,
   dukeNgarkuarPorosite,
   gabimiPorosive,
+  neNgarkoPorosite,
 }: {
   onRezervo: (service?: string) => void;
   terminet: Appointment[];
   dukeNgarkuar: boolean;
   gabimi: string;
+  neNgarkoTerminet: () => Promise<void>;
   porosite: CustomerOrder[];
   dukeNgarkuarPorosite: boolean;
   gabimiPorosive: string;
+  neNgarkoPorosite: () => Promise<void>;
 }) {
   const terminetAktive = terminet.filter((termini) => termini.status !== 'cancelled');
   return (
@@ -249,7 +255,12 @@ function PamjaKlient({
         />
       </View>
 
-      <SectionHeading title="Terminet e mia" />
+      <View style={styles.staffSectionHeading}>
+        <SectionHeading title="Terminet e mia" />
+        <Pressable accessibilityRole="button" accessibilityLabel="Rifresko terminet" disabled={dukeNgarkuar} onPress={() => void neNgarkoTerminet()}>
+          <Text style={styles.refreshText}>{dukeNgarkuar ? 'Po ngarkohen…' : 'Rifresko'}</Text>
+        </Pressable>
+      </View>
       {gabimi ? (
         <Text accessibilityRole="alert" style={styles.errorText}>{gabimi}</Text>
       ) : dukeNgarkuar ? (
@@ -260,7 +271,12 @@ function PamjaKlient({
         <Text style={styles.emptyText}>Ende nuk ke termine. Kërko termin për të planifikuar vizitën.</Text>
       )}
 
-      <SectionHeading title="Porositë e mia" />
+      <View style={styles.staffSectionHeading}>
+        <SectionHeading title="Porositë e mia" />
+        <Pressable accessibilityRole="button" accessibilityLabel="Rifresko porositë" disabled={dukeNgarkuarPorosite} onPress={() => void neNgarkoPorosite()}>
+          <Text style={styles.refreshText}>{dukeNgarkuarPorosite ? 'Po ngarkohen…' : 'Rifresko'}</Text>
+        </Pressable>
+      </View>
       {gabimiPorosive ? (
         <Text accessibilityRole="alert" style={styles.errorText}>{gabimiPorosive}</Text>
       ) : dukeNgarkuarPorosite ? (
