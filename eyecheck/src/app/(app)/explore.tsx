@@ -45,6 +45,29 @@ export default function Katalogu() {
   const [dukeNgarkuar, setDukeNgarkuar] = useState(true);
   const [gabimi, setGabimi] = useState('');
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [porosiaDukeUderguar, setPorosiaDukeUderguar] = useState<string | null>(null);
+  const [porosiaSukses, setPorosiaSukses] = useState('');
+  const [gabimiPorosise, setGabimiPorosise] = useState('');
+
+  const kerkoProduktin = async (produkt: Produkt) => {
+    setGabimiPorosise('');
+    setPorosiaSukses('');
+    setPorosiaDukeUderguar(produkt.id);
+    try {
+      const { error } = await supabase.rpc('create_product_order_request', {
+        p_product_id: produkt.id,
+      });
+      if (error) {
+        setGabimiPorosise('Porosia nuk u dërgua. Kontrollo që skedari optika_orders.sql është ekzekutuar në Supabase.');
+      } else {
+        setPorosiaSukses(produkt.name);
+      }
+    } catch {
+      setGabimiPorosise('Porosia nuk u dërgua. Kontrollo që skedari optika_orders.sql është ekzekutuar në Supabase.');
+    } finally {
+      setPorosiaDukeUderguar(null);
+    }
+  };
 
   useEffect(() => {
     let aktiv = true;
@@ -120,6 +143,13 @@ export default function Katalogu() {
       </ScrollView>
 
       {gabimi ? <Text accessibilityRole="alert" style={styles.error}>{gabimi}</Text> : null}
+      {gabimiPorosise ? <Text accessibilityRole="alert" style={styles.error}>{gabimiPorosise}</Text> : null}
+      {porosiaSukses ? (
+        <View accessibilityRole="alert" style={styles.successNotice}>
+          <Text style={styles.successTitle}>Kërkesa u dërgua</Text>
+          <Text style={styles.successText}>{porosiaSukses} · ekipi i optikës do të të kontaktojë për konfirmim.</Text>
+        </View>
+      ) : null}
       {dukeNgarkuar ? (
         <ActivityIndicator color="#31594d" style={styles.loader} />
       ) : produktetEFiltruara.length ? (
@@ -132,6 +162,15 @@ export default function Katalogu() {
               <Text style={styles.productName}>{produkti.name}</Text>
               <Text style={styles.productDescription}>{produkti.description || 'Pyet ekipin për më shumë hollësi.'}</Text>
               <Text style={styles.productPrice}>{EURO.format(Number(produkti.price))}</Text>
+              <Pressable
+                accessibilityRole="button"
+                disabled={Boolean(porosiaDukeUderguar)}
+                onPress={() => void kerkoProduktin(produkti)}
+                style={styles.orderButton}>
+                <Text style={styles.orderButtonText}>
+                  {porosiaDukeUderguar === produkti.id ? 'Po dërgohet…' : 'Kërko këtë produkt'}
+                </Text>
+              </Pressable>
             </View>
           </View>
         ))
@@ -182,6 +221,11 @@ const styles = StyleSheet.create({
   productName: { color: '#253a34', fontSize: 14, fontWeight: '700' },
   productDescription: { color: '#7b8580', fontSize: 11, lineHeight: 16, marginTop: 4 },
   productPrice: { color: '#31594d', fontSize: 13, fontWeight: '700', marginTop: 7 },
+  orderButton: { alignSelf: 'flex-start', backgroundColor: '#173d37', borderRadius: 9, paddingHorizontal: 11, paddingVertical: 8, marginTop: 9 },
+  orderButtonText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  successNotice: { backgroundColor: '#e4eee6', borderRadius: 13, padding: 13, marginBottom: 12 },
+  successTitle: { color: '#26483d', fontSize: 13, fontWeight: '700' },
+  successText: { color: '#61746a', fontSize: 11, lineHeight: 16, marginTop: 3 },
   loader: { marginVertical: 30 },
   error: { color: '#9f3333', backgroundColor: '#fff0ed', borderRadius: 12, padding: 13, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   emptyState: { alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 22, marginTop: 2 },
