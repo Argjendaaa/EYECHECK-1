@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StatusBar,
@@ -10,6 +11,7 @@ import {
 } from 'react-native';
 import { BookingForm } from '@/components/booking-form';
 import { StoreInfoCard } from '@/components/store-info-card';
+import { dil } from '@/utils/hyrja';
 import { supabase } from '@/utils/supabase';
 import { useSesioni } from '@/utils/sesioni';
 
@@ -138,6 +140,21 @@ export default function Index() {
     setBookingOpen(true);
   };
 
+  const konfirmoDaljen = () => {
+    Alert.alert('Dil nga llogaria?', 'Mund të kyçesh përsëri me emailin dhe fjalëkalimin tënd.', [
+      { text: 'Anulo', style: 'cancel' },
+      {
+        text: 'Dil',
+        style: 'destructive',
+        onPress: () => {
+          void dil().then(({ error }) => {
+            if (error) Alert.alert('Nuk dole nga llogaria', error.message);
+          }).catch(() => Alert.alert('Gabim', 'Dalja dështoi. Provo përsëri.'));
+        },
+      },
+    ]);
+  };
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <StatusBar barStyle="dark-content" />
@@ -147,7 +164,14 @@ export default function Index() {
           <Text style={styles.brand}>OPTIKA</Text>
           <Text style={styles.headerCaption}>Kujdes për shikimin, në një vend.</Text>
         </View>
-        <View style={styles.avatar}><Text style={styles.avatarText}>O</Text></View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Dil nga llogaria ${sesioni?.user.email ?? ''}`}
+          onPress={konfirmoDaljen}
+          style={styles.accountButton}>
+          <View style={styles.avatar}><Text style={styles.avatarText}>{sesioni?.user.email?.[0]?.toUpperCase() ?? 'P'}</Text></View>
+          <Text style={styles.signOutText}>Dil</Text>
+        </Pressable>
       </View>
 
       {dukeNgarkuarRolin ? (
@@ -557,6 +581,8 @@ const styles = StyleSheet.create({
   headerCaption: { color: '#66746f', fontSize: 12, marginTop: 4 },
   avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#e0e9e3', alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#173d37', fontSize: 16, fontWeight: '700' },
+  accountButton: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  signOutText: { color: '#31594d', fontSize: 12, fontWeight: '700' },
   greeting: { color: '#738078', fontSize: 14, marginBottom: 6 },
   pageTitle: { color: '#1d302b', fontSize: 26, lineHeight: 32, fontWeight: '700', marginBottom: 20 },
   hero: { overflow: 'hidden', backgroundColor: '#173d37', borderRadius: 22, padding: 22, marginBottom: 26 },
