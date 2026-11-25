@@ -1,180 +1,66 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ExternalLink } from '@/components/external-link';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+const KATEGORITE = [
+  { emri: 'Korniza optike', pershkrimi: 'Klasike, moderne dhe për fëmijë', ikona: '◉', ngjyra: '#e4eee6' },
+  { emri: 'Syze dielli', pershkrimi: 'Mbrojtje për ditët me diell', ikona: '☼', ngjyra: '#f5eddf' },
+  { emri: 'Lente kontakti', pershkrimi: 'Zgjidhje të lehta për çdo ditë', ikona: '✳', ngjyra: '#e9e9f0' },
+];
 
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
-  const theme = useTheme();
-
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
-
+export default function Katalogu() {
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <Text style={styles.eyebrow}>OPTIKA · KOLEKSIONI</Text>
+      <Text style={styles.title}>Gjej stilin tënd.</Text>
+      <Text style={styles.intro}>Eksploro kategoritë dhe kërko ndihmë nga ekipi ynë në optikë.</Text>
 
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
-        </ThemedView>
+      <View style={styles.feature}>
+        <Text style={styles.featureIcon}>✦</Text>
+        <View style={styles.featureCopy}>
+          <Text style={styles.featureTitle}>Nuk je i sigurt çka të zgjedhësh?</Text>
+          <Text style={styles.featureText}>Rezervo një konsultim dhe provo kornizat në optikë.</Text>
+        </View>
+      </View>
 
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+      <Text style={styles.sectionTitle}>Kategoritë</Text>
+      {KATEGORITE.map((kategoria) => (
+        <Pressable
+          key={kategoria.emri}
+          style={styles.categoryCard}
+          onPress={() => Alert.alert(kategoria.emri, 'Katalogu i produkteve po përgatitet.')}>
+          <View style={[styles.categoryIcon, { backgroundColor: kategoria.ngjyra }]}>
+            <Text style={styles.categoryGlyph}>{kategoria.ikona}</Text>
+          </View>
+          <View style={styles.categoryCopy}>
+            <Text style={styles.categoryTitle}>{kategoria.emri}</Text>
+            <Text style={styles.categoryDescription}>{kategoria.pershkrimi}</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+      ))}
 
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
-
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
+      <Text style={styles.note}>Fotot, modelet dhe çmimet do të shtohen pasi të zgjedhim optikën partnere.</Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: 'center',
-    gap: Spacing.one,
-    alignItems: 'center',
-  },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-  },
-  collapsibleContent: {
-    alignItems: 'center',
-  },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
-  },
+  screen: { flex: 1, backgroundColor: '#f5f5f0' },
+  content: { paddingHorizontal: 22, paddingTop: 64, paddingBottom: 36 },
+  eyebrow: { color: '#718078', fontSize: 11, fontWeight: '800', letterSpacing: 2 },
+  title: { color: '#1d302b', fontSize: 30, fontWeight: '700', marginTop: 8 },
+  intro: { color: '#718078', fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 24 },
+  feature: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#173d37', borderRadius: 18, padding: 17, marginBottom: 28 },
+  featureIcon: { color: '#e5c58b', fontSize: 23, marginRight: 13 },
+  featureCopy: { flex: 1 },
+  featureTitle: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  featureText: { color: '#d0ded7', fontSize: 11, lineHeight: 16, marginTop: 4 },
+  sectionTitle: { color: '#1d302b', fontSize: 18, fontWeight: '700', marginBottom: 13 },
+  categoryCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 17, padding: 13, marginBottom: 11, borderWidth: 1, borderColor: '#e9e9e2' },
+  categoryIcon: { width: 56, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  categoryGlyph: { color: '#31594d', fontSize: 25 },
+  categoryCopy: { flex: 1, marginLeft: 14 },
+  categoryTitle: { color: '#253a34', fontSize: 14, fontWeight: '700' },
+  categoryDescription: { color: '#7b8580', fontSize: 11, marginTop: 4 },
+  chevron: { color: '#9aa49d', fontSize: 25, paddingHorizontal: 5 },
+  note: { color: '#8b958f', fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 15 },
 });

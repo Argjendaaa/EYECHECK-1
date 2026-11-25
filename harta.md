@@ -1,24 +1,34 @@
-# HARTA - EyeCheck
+# HARTA — Aplikacioni i optikës
 
-Puna e vetme e aplikacionit: ta kontrollosh shikimin në telefon në rreth 2 minuta dhe të të thotë a duhet të shkosh te mjeku.
+## Qëllimi
 
-## Rrjedha kryesore (4 ekrane)
-1. Mirëseardhja: një shpjegim i shkurtër dhe sa larg duhet ta mbash telefonin.
-2. Testi: shkronja që bëhen më të vogla, një sy pastaj tjetri. Përdoruesi mund t'i zmadhojë ose zvogëlojë shkronjat (zoom) deri sa i lexon qartë, dhe aplikacioni vlerëson shikimin nga madhësia e fundit që i lexoi. Për fëmijët mund të jetë në formë loje.
-3. Rezultati: rezultat i thjeshtë dhe këshillë, p.sh. "mirë të shkosh te mjeku".
-4. Dërgo te optika: zgjedh optikën dhe ia dërgon rezultatin.
+Një aplikacion që lidh klientët me një optikë dhe i ndihmon punonjësit të organizojnë ditën, terminet dhe porositë. Aplikacioni nuk kryen diagnoza dhe nuk zëvendëson kontrollin te profesionisti i kujdesit për sytë.
 
-## Brenda në MVP
-- testi bazë i shikimit me zmadhim dhe zvogëlim të shkronjave
-- rezultati dhe këshilla
-- dërgimi te një optikë
+## Dy përvoja
 
-## Jashtë MVP
-- diagnoza mjekësore
-- pagesat
-- llogari të shumta dhe historik i gjatë
-- testi i ngjyrave
+### Klienti
+- Shfleton korniza optike, syze dielli dhe lente kontakti.
+- Shikon shërbimet dhe rezervon termin.
+- Kontrollon statusin e porosisë së syzeve.
 
-Shënim: aplikacionet e tilla nuk janë gjithmonë të sakta, prandaj EyeCheck është vetëm kontroll i parë dhe nuk e zëvendëson mjekun.
+### Stafi
+- Sheh përmbledhjen dhe terminet e ditës.
+- Menaxhon rezervimet dhe statusin e porosive.
+- Gjen të dhënat bazë të klientëve kur nevojiten për shërbim.
 
-Skica e ekraneve: foto nga letra 
+## MVP — rendi i punës
+
+1. Përcaktojmë me një optikë shërbimet, produktet dhe rrjedhën e rezervimit.
+2. Ndërtojmë katalogun bazë dhe kërkesën për termin nga klienti.
+3. Ndërtojmë panelin e stafit për terminet dhe porositë.
+4. Lidhim të dy përvojat me Supabase, me qasje të ndarë sipas rolit.
+
+## Jashtë MVP-së
+
+- Pagesat brenda aplikacionit.
+- Rekomandime automatike ose diagnoza mjekësore.
+- Ruajtja e të dhënave të ndjeshme të recetave pa kërkesa të qarta dhe mbrojtje të përshtatshme.
+
+## Gjendja e prototipit
+
+Ekrani kryesor paraqet ndërruesin Klient/Staf dhe shembuj të dy pamjeve. Produktet, statistikat dhe terminet në këtë prototip janë të dhëna shembull; veprimet ende nuk ruhen në databazë.

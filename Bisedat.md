@@ -1,4 +1,6 @@
-# BISEDAT - EyeCheck
+# BISEDAT — Hulumtimi fillestar
+
+Këto tri biseda u zhvilluan kur ideja ishte një aplikacion për kontroll fillestar të shikimit. Ato nuk e vërtetojnë nevojën për aplikacionin e ri të optikës. Hapi i ardhshëm i hulumtimit është të flasim me klientë dhe punonjës/pronarë optikash për terminet, produktet dhe porositë.
 
 Tri biseda me njerëz që e kanë vërtet problemin. Pa emra të plotë dhe pa numra telefoni.
 

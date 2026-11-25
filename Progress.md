@@ -1,5 +1,10 @@
 # PROGRES
 
+## Ndryshimi i fokusit
+- Projekti kaloi nga kontrolli fillestar i shikimit te aplikacioni i optikës për klientë dhe staf.
+- Harta e produktit u përditësua; rrjedhat ende duhen validuar me një optikë.
+- Ekrani kryesor tani ka pamje demonstrimi për klientin dhe stafin; të dhënat janë statike.
+
 ## Çka punon
 - M0: AGENTS.md është në repo.
 - M1: aplikacioni lidhet me Supabase dhe lexon tabelën `diagnozat`, e shfaq në telefon (Expo Go).

@@ -1,4 +1,4 @@
-# EKIPI · EyeCheck
+# EKIPI · Aplikacioni i optikës
 
 
 Anëtarët: Albina Shabanaj dhe Argjenda Istrefi
@@ -6,7 +6,7 @@ Anëtarët: Albina Shabanaj dhe Argjenda Istrefi
 Rruga: ———————
 
 ## Ideja
-EyeCheck është aplikacion mobil që i lejon përdoruesit të bëjë një kontroll fillestar të shikimit në telefon dhe ta ndajë rezultatin me optikën para vizitës. Nuk zëvendëson mjekun.
+Aplikacion mobil për klientët dhe stafin e një optike. Klientët mund të shfletojnë produkte dhe të kërkojnë termine; stafi mund të organizojë terminet dhe porositë.
 
-## Përdoruesi i parë
-Pronari ose punonjësi i një optike në Mitrovicë, që dëshiron më pak vizita pa nevojë dhe takime më të organizuara.
+## Përdoruesit e parë
+Klientët e optikës dhe punonjësit që i shërbejnë. Duhet të bisedojmë me një optikë për ta validuar rrjedhën e rezervimeve, porosive dhe katalogut.
