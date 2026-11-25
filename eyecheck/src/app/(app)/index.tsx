@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -141,17 +142,27 @@ export default function Index() {
   };
 
   const konfirmoDaljen = () => {
+    const kryejDaljen = () => {
+      void dil().then(({ error }) => {
+        if (error) {
+          const mesazhi = `Nuk dole nga llogaria: ${error.message}`;
+          if (Platform.OS === 'web') globalThis.alert(mesazhi);
+          else Alert.alert('Nuk dole nga llogaria', error.message);
+        }
+      }).catch(() => {
+        if (Platform.OS === 'web') globalThis.alert('Dalja dështoi. Provo përsëri.');
+        else Alert.alert('Gabim', 'Dalja dështoi. Provo përsëri.');
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm('Dëshiron të dalësh nga llogaria?')) kryejDaljen();
+      return;
+    }
+
     Alert.alert('Dil nga llogaria?', 'Mund të kyçesh përsëri me emailin dhe fjalëkalimin tënd.', [
       { text: 'Anulo', style: 'cancel' },
-      {
-        text: 'Dil',
-        style: 'destructive',
-        onPress: () => {
-          void dil().then(({ error }) => {
-            if (error) Alert.alert('Nuk dole nga llogaria', error.message);
-          }).catch(() => Alert.alert('Gabim', 'Dalja dështoi. Provo përsëri.'));
-        },
-      },
+      { text: 'Dil', style: 'destructive', onPress: kryejDaljen },
     ]);
   };
 
