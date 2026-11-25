@@ -45,7 +45,9 @@ function krijoKohen(data: string, ora: string) {
     koha.getMonth() === muaji - 1 &&
     koha.getDate() === dita;
 
-  if (!eshteDateValide || koha.getTime() <= Date.now()) return null;
+  const diteEHapur = koha.getDay() !== 0;
+  const oreBrendaOrarit = oret >= 10 && oret < 18;
+  if (!eshteDateValide || !diteEHapur || !oreBrendaOrarit || koha.getTime() <= Date.now()) return null;
   return koha;
 }
 
@@ -74,7 +76,7 @@ export function BookingForm({ visible, defaultService, onClose }: BookingFormPro
 
     const koha = krijoKohen(data.trim(), ora.trim());
     if (!koha) {
-      setGabimi('Kontrollo datën (YYYY-MM-DD) dhe orën (HH:MM). Zgjidh një kohë në të ardhmen.');
+      setGabimi('Zgjidh një datë nga e hëna në të shtunë dhe orë 10:00–17:59, në të ardhmen.');
       return;
     }
 

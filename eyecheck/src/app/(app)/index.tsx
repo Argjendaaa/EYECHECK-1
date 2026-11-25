@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { BookingForm } from '@/components/booking-form';
+import { StoreInfoCard } from '@/components/store-info-card';
 import { supabase } from '@/utils/supabase';
 import { useSesioni } from '@/utils/sesioni';
 
@@ -178,6 +179,7 @@ export default function Index() {
         />
       )}
 
+      <StoreInfoCard />
       <Text style={styles.footer}>Optika · Shërbim i thjeshtë, kujdes personal</Text>
 
       {bookingOpen && (

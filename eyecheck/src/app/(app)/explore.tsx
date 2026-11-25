@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { BookingForm } from '@/components/booking-form';
+import { StoreInfoCard } from '@/components/store-info-card';
 import { supabase } from '@/utils/supabase';
 import { useSesioni } from '@/utils/sesioni';
 
@@ -201,6 +202,7 @@ export default function Katalogu() {
           </Pressable>
         ) : null}
       </View>
+      <StoreInfoCard />
       <TextInput
         accessibilityLabel="Kërko produkte"
         value={kerkimi}
