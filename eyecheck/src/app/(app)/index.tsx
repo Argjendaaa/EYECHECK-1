@@ -19,6 +19,13 @@ type Appointment = {
   requested_at: string;
   status: AppointmentStatus;
 };
+type OrderStatus = 'received' | 'in_preparation' | 'ready' | 'completed' | 'cancelled';
+type CustomerOrder = {
+  id: string;
+  status: OrderStatus;
+  created_at: string;
+  order_items: { product_name: string; quantity: number; unit_price: number }[];
+};
 
 const PRODUKTET = [
   { ikona: '◉', emri: 'Korniza optike', detaji: 'Për çdo ditë' },
@@ -34,6 +41,10 @@ export default function Index() {
   const [dukeNgarkuarTerminet, setDukeNgarkuarTerminet] = useState(false);
   const [gabimiTermineve, setGabimiTermineve] = useState('');
   const [terminiNePerditesim, setTerminiNePerditesim] = useState<string | null>(null);
+  const [porosite, setPorosite] = useState<CustomerOrder[]>([]);
+  const [dukeNgarkuarPorosite, setDukeNgarkuarPorosite] = useState(false);
+  const [gabimiPorosive, setGabimiPorosive] = useState('');
+  const [porosiaNePerditesim, setPorosiaNePerditesim] = useState<string | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingService, setBookingService] = useState('Vizitë në optikë');
 
@@ -76,9 +87,28 @@ export default function Index() {
     setDukeNgarkuarTerminet(false);
   }, []);
 
+  const ngarkoPorosite = useCallback(async () => {
+    setDukeNgarkuarPorosite(true);
+    setGabimiPorosive('');
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, status, created_at, order_items(product_name, quantity, unit_price)')
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (error) {
+      setGabimiPorosive('Porositë nuk u ngarkuan. Kontrollo lidhjen me Supabase.');
+    } else {
+      setPorosite((data ?? []) as CustomerOrder[]);
+    }
+    setDukeNgarkuarPorosite(false);
+  }, []);
+
   useEffect(() => {
-    if (!dukeNgarkuarRolin) void ngarkoTerminet();
-  }, [dukeNgarkuarRolin, ngarkoTerminet, roli]);
+    if (!dukeNgarkuarRolin) {
+      void ngarkoTerminet();
+      void ngarkoPorosite();
+    }
+  }, [dukeNgarkuarRolin, ngarkoPorosite, ngarkoTerminet, roli]);
 
   const perditesoStatusin = async (id: string, status: 'confirmed' | 'cancelled') => {
     setTerminiNePerditesim(id);
@@ -89,6 +119,17 @@ export default function Index() {
       setTerminet((aktualet) => aktualet.map((termini) => termini.id === id ? { ...termini, status } : termini));
     }
     setTerminiNePerditesim(null);
+  };
+
+  const perditesoPorosine = async (id: string, status: OrderStatus) => {
+    setPorosiaNePerditesim(id);
+    const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+    if (error) {
+      setGabimiPorosive('Statusi i porosisë nuk u ruajt. Kontrollo rolin e stafit në Supabase.');
+    } else {
+      setPorosite((aktualet) => aktualet.map((porosia) => porosia.id === id ? { ...porosia, status } : porosia));
+    }
+    setPorosiaNePerditesim(null);
   };
 
   const openBooking = (service = 'Vizitë në optikë') => {
@@ -116,6 +157,9 @@ export default function Index() {
           terminet={terminet}
           dukeNgarkuar={dukeNgarkuarTerminet}
           gabimi={gabimiTermineve}
+          porosite={porosite}
+          dukeNgarkuarPorosite={dukeNgarkuarPorosite}
+          gabimiPorosive={gabimiPorosive}
         />
       ) : (
         <PamjaStaf
@@ -125,6 +169,12 @@ export default function Index() {
           gabimi={gabimiTermineve}
           neNgarko={ngarkoTerminet}
           nePerditeso={perditesoStatusin}
+          porosite={porosite}
+          dukeNgarkuarPorosite={dukeNgarkuarPorosite}
+          gabimiPorosive={gabimiPorosive}
+          porosiaNePerditesim={porosiaNePerditesim}
+          neNgarkoPorosite={ngarkoPorosite}
+          nePerditesoPorosine={perditesoPorosine}
         />
       )}
 
@@ -137,6 +187,7 @@ export default function Index() {
           onClose={() => {
             setBookingOpen(false);
             void ngarkoTerminet();
+            void ngarkoPorosite();
           }}
         />
       )}
@@ -149,11 +200,17 @@ function PamjaKlient({
   terminet,
   dukeNgarkuar,
   gabimi,
+  porosite,
+  dukeNgarkuarPorosite,
+  gabimiPorosive,
 }: {
   onRezervo: (service?: string) => void;
   terminet: Appointment[];
   dukeNgarkuar: boolean;
   gabimi: string;
+  porosite: CustomerOrder[];
+  dukeNgarkuarPorosite: boolean;
+  gabimiPorosive: string;
 }) {
   const terminetAktive = terminet.filter((termini) => termini.status !== 'cancelled');
   return (
@@ -201,6 +258,17 @@ function PamjaKlient({
         <Text style={styles.emptyText}>Ende nuk ke termine. Kërko termin për të planifikuar vizitën.</Text>
       )}
 
+      <SectionHeading title="Porositë e mia" />
+      {gabimiPorosive ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>{gabimiPorosive}</Text>
+      ) : dukeNgarkuarPorosite ? (
+        <ActivityIndicator color="#31594d" style={styles.inlineLoader} />
+      ) : porosite.length ? (
+        porosite.slice(0, 3).map((porosia) => <OrderCard key={porosia.id} order={porosia} />)
+      ) : (
+        <Text style={styles.emptyText}>Porositë që kërkon nga katalogu do të shfaqen këtu.</Text>
+      )}
+
       <SectionHeading title="Koleksioni" />
       {PRODUKTET.map((produkti, index) => (
         <View
@@ -228,6 +296,12 @@ function PamjaStaf({
   gabimi,
   neNgarko,
   nePerditeso,
+  porosite,
+  dukeNgarkuarPorosite,
+  gabimiPorosive,
+  porosiaNePerditesim,
+  neNgarkoPorosite,
+  nePerditesoPorosine,
 }: {
   terminet: Appointment[];
   dukeNgarkuar: boolean;
@@ -235,6 +309,12 @@ function PamjaStaf({
   gabimi: string;
   neNgarko: () => Promise<void>;
   nePerditeso: (id: string, status: 'confirmed' | 'cancelled') => Promise<void>;
+  porosite: CustomerOrder[];
+  dukeNgarkuarPorosite: boolean;
+  gabimiPorosive: string;
+  porosiaNePerditesim: string | null;
+  neNgarkoPorosite: () => Promise<void>;
+  nePerditesoPorosine: (id: string, status: OrderStatus) => Promise<void>;
 }) {
   const nePritje = terminet.filter((termini) => termini.status === 'requested');
   const sot = new Date().toDateString();
@@ -247,7 +327,7 @@ function PamjaStaf({
       <View style={styles.statsRow}>
         <StatCard value={String(terminetSot.length).padStart(2, '0')} label="Termine sot" />
         <StatCard value={String(nePritje.length).padStart(2, '0')} label="Në pritje" />
-        <StatCard value="—" label="Porosi" />
+        <StatCard value={String(porosite.filter((porosia) => !['completed', 'cancelled'].includes(porosia.status)).length).padStart(2, '0')} label="Porosi aktive" />
       </View>
 
       <View style={styles.staffBanner}>
@@ -294,7 +374,83 @@ function PamjaStaf({
       ) : (
         <Text style={styles.emptyText}>Nuk ka kërkesa për termine për momentin.</Text>
       )}
+
+      <View style={styles.staffSectionHeading}>
+        <SectionHeading title="Porositë e produkteve" />
+        <Pressable accessibilityRole="button" disabled={dukeNgarkuarPorosite} onPress={() => void neNgarkoPorosite()}>
+          <Text style={styles.refreshText}>{dukeNgarkuarPorosite ? 'Po ngarkohen…' : 'Rifresko'}</Text>
+        </Pressable>
+      </View>
+      {gabimiPorosive ? <Text accessibilityRole="alert" style={styles.errorText}>{gabimiPorosive}</Text> : null}
+      {dukeNgarkuarPorosite ? (
+        <ActivityIndicator color="#31594d" style={styles.inlineLoader} />
+      ) : porosite.length ? (
+        porosite.map((porosia) => (
+          <View key={porosia.id} style={styles.staffAppointmentWrap}>
+            <OrderCard order={porosia} />
+            {porosia.status !== 'completed' && porosia.status !== 'cancelled' ? (
+              <View style={styles.appointmentActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={porosiaNePerditesim === porosia.id}
+                  onPress={() => void nePerditesoPorosine(porosia.id, nextOrderStatus(porosia.status))}
+                  style={styles.confirmButton}>
+                  <Text style={styles.confirmButtonText}>
+                    {porosiaNePerditesim === porosia.id ? 'Po ruhet…' : orderAction(porosia.status)}
+                  </Text>
+                </Pressable>
+                {porosia.status === 'received' ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={porosiaNePerditesim === porosia.id}
+                    onPress={() => void nePerditesoPorosine(porosia.id, 'cancelled')}
+                    style={styles.cancelButton}>
+                    <Text style={styles.cancelButtonText}>Anulo</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>Nuk ka porosi për momentin.</Text>
+      )}
     </>
+  );
+}
+
+function nextOrderStatus(status: OrderStatus): OrderStatus {
+  if (status === 'received') return 'in_preparation';
+  if (status === 'in_preparation') return 'ready';
+  return 'completed';
+}
+
+function orderAction(status: OrderStatus) {
+  if (status === 'received') return 'Nise përgatitjen';
+  if (status === 'in_preparation') return 'Shëno gati';
+  return 'Përfundo porosinë';
+}
+
+function OrderCard({ order }: { order: CustomerOrder }) {
+  const statusLabels: Record<OrderStatus, string> = {
+    received: 'Pranuar',
+    in_preparation: 'Në përgatitje',
+    ready: 'Gati për marrje',
+    completed: 'Përfunduar',
+    cancelled: 'Anuluar',
+  };
+  const productSummary = order.order_items?.map((item) => `${item.product_name} × ${item.quantity}`).join(', ') || 'Produkt';
+  const total = order.order_items?.reduce((sum, item) => sum + Number(item.unit_price) * item.quantity, 0) ?? 0;
+  const date = new Date(order.created_at).toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' });
+  return (
+    <View style={styles.orderCard}>
+      <View style={styles.orderHeader}>
+        <Text style={styles.orderDate}>{date}</Text>
+        <Text style={styles.orderStatus}>{statusLabels[order.status]}</Text>
+      </View>
+      <Text style={styles.orderProducts}>{productSummary}</Text>
+      <Text style={styles.orderTotal}>Vlera e produkteve: {new Intl.NumberFormat('sq-AL', { style: 'currency', currency: 'EUR' }).format(total)}</Text>
+    </View>
   );
 }
 
@@ -441,5 +597,11 @@ const styles = StyleSheet.create({
   cancelButton: { minWidth: 88, minHeight: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff0ed' },
   cancelButtonText: { color: '#9f3333', fontSize: 12, fontWeight: '700' },
   dateText: { color: '#718078', fontSize: 10, marginTop: 3, textAlign: 'center' },
+  orderCard: { backgroundColor: '#fff', borderRadius: 15, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#e9e9e2' },
+  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  orderDate: { color: '#718078', fontSize: 11 },
+  orderStatus: { color: '#31594d', backgroundColor: '#e5eee7', overflow: 'hidden', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, fontSize: 10, fontWeight: '700' },
+  orderProducts: { color: '#253a34', fontSize: 13, fontWeight: '700', marginTop: 10 },
+  orderTotal: { color: '#718078', fontSize: 11, marginTop: 5 },
   footer: { color: '#9aa49d', fontSize: 11, textAlign: 'center', marginTop: 26 },
 });
